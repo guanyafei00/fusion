@@ -4,7 +4,7 @@
 
 # Fusion
 
-**多模型协作管线（Multi-Model Collaboration Pipeline）** — 让多个 AI 模型协同工作，比任何一个单模型更准、更稳、更抗压
+**多模型协作框架（Multi-Model Collaboration Framework）** — 让多个 AI 模型协同工作，比任何一个单模型更准、更稳、更抗压
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](https://opensource.org/licenses/MIT)
@@ -92,7 +92,7 @@ fusion "2024年诺贝尔物理学奖给了谁？"
 
 ### 3. 降低单点依赖——降级容错
 
-你的业务不绑死在任何一个模型上。某个模型挂了？Fusion 自动跳过它，用剩下的模型跑。某个厂商涨价？换个厂商的模型就行，管线不变。
+你的业务不绑死在任何一个模型上。某个模型挂了？Fusion 自动跳过它，用剩下的模型跑。某个厂商涨价？换个厂商的模型就行，框架不变。
 
 ```bash
 # 模型 A 限流了？Fusion 照常跑，只是少一个 Panel 输入
@@ -425,7 +425,7 @@ fusion/
 ├── config.py       # 配置管理
 ├── fetchers.py     # URL 抓取（6种策略 + 降级链）
 ├── llm.py          # LLM 调用封装
-├── pipeline.py     # Panel→Judge→Synth 管线
+├── pipeline.py     # Panel→Judge→Synth 流程
 └── security.py     # SSRF防护 + 速率限制
 ```
 
@@ -437,7 +437,7 @@ fusion/
 |--------|---------------|-------------------|
 | 幻觉检测 | 无法做到 | 交叉验证自动筛除 |
 | 复杂任务准确率 | 单模型容易翻车 | 多模型交叉验证更准（本地实测见案例） |
-| 厂商依赖 | 绑死一个厂商 | 换厂商不影响管线 |
+| 厂商依赖 | 绑死一个厂商 | 换厂商不影响框架 |
 | 降级容错 | 模型挂了直接废 | 自动跳过故障模型 |
 | API 成本 | 低 | 约单模型5倍（3 Panel + 1 Judge + 1 Synth） |
 | 适用场景 | 简单问题 | 重要决策、事实核查、争议话题、复杂对比 |
@@ -447,7 +447,7 @@ fusion/
 <a id="english"></a>
 ## English
 
-**Fusion** is a multi-model collaboration pipeline that makes AI more reliable through a 3-stage architecture:
+**Fusion** is a multi-model collaboration framework that makes AI more reliable through a 3-stage architecture:
 
 1. **Panel** — 3 models from **different vendors** answer independently in parallel
 2. **Judge** — A 4th independent model scores each answer (with reasoning)
@@ -459,7 +459,7 @@ fusion/
 |---------|-----------------|
 | **Hallucination** | Cross-validation across vendors catches fabricated answers |
 | **Complex tasks** | Cross-validation + honest degradation. Real test: 3 models independently agreed on same book list from 4 sources; when sources were insufficient (3/4 blocked by anti-scraping), Fusion listed blind spots instead of fabricating |
-| **Vendor lock-in** | Swap models without changing your pipeline; auto-degrades if one model fails |
+| **Vendor lock-in** | Swap models without changing your framework; auto-degrades if one model fails |
 
 **Why different vendors?** Models from the same vendor share training data and biases. Cross-validation across vendors catches hallucinations that self-review can't.
 
