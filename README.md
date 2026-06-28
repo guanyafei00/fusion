@@ -358,6 +358,12 @@ fusion/
 
 ---
 
+## 致谢
+
+本项目由 **guanyafei00** 提供产品思路与方向指导，**Hermes Agent** 完成全部代码编写。
+
+初次版本由 **Qwen 3.5** 生成，后续重构与完善由 **GLM-5** 完成。
+
 ## License
 
 MIT License
