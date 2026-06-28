@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/fusion_logo.png" alt="Fusion Logo" width="640"/>
+</p>
+
 # Fusion
 
 **多模型共识管线（Multi-model Consensus Pipeline）** — Panel→Judge→Synth 三阶段对抗幻觉架构
