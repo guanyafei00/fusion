@@ -4,6 +4,11 @@
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](https://opensource.org/licenses/MIT)
+[![GitHub stars](https://img.shields.io/github/stars/guanyafei00/fusion?style=social)](https://github.com/guanyafei00/fusion/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/guanyafei00/fusion?style=social)](https://github.com/guanyafei00/fusion/network/members)
+[![GitHub issues](https://img.shields.io/github/issues/guanyafei00/fusion)](https://github.com/guanyafei00/fusion/issues)
+
+**[English](#english) | [中文](#问题是什么)**
 
 ---
 
@@ -355,6 +360,26 @@ fusion/
 | 准确率提升 | 边际递减 | 不同厂商越多越好 |
 | API 成本 | 低 | 约单模型5倍（3 Panel + 1 Judge + 1 Synth） |
 | 适用场景 | 简单问题 | 重要决策、事实核查、争议话题 |
+
+---
+
+<a id="english"></a>
+## English
+
+**Fusion** is a multi-model consensus pipeline that fights LLM hallucination through a 3-stage architecture:
+
+1. **Panel** — 3 models from **different vendors** answer independently in parallel
+2. **Judge** — A 4th independent model scores each answer (with reasoning)
+3. **Synth** — A 5th model synthesizes all sources into a final answer with citations
+
+**Why different vendors?** Models from the same vendor share training data and biases. Cross-validation across vendors catches hallucinations that self-review can't.
+
+```bash
+pip install .
+fusion "Your question here" -u https://reference-url.com
+```
+
+See the Chinese sections above for full documentation.
 
 ---
 
