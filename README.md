@@ -90,6 +90,29 @@ fusion "2024年诺贝尔物理学奖给了谁？"
 **关键**：单模型在材料不足时会编造补全，Fusion 的 Judge 机制让它**宁可列出盲区也不瞎编**。
 </details>
 
+<details>
+<summary>📋 案例3：5厂商全流程验证——降级容错二次实证</summary>
+
+**问题**：`fusion "2025年A股科技板块投资逻辑"`
+
+**模型配置**（5个角色来自5个不同厂商）：
+
+| 角色 | 模型 | 厂商 | 状态 |
+|------|------|------|------|
+| Panel A | qwen/qwen3-next-80b | 阿里 | ✅ 9分（最高） |
+| Panel B | gemini-2.5-pro | 谷歌 | ✅ 8分 |
+| Panel C | stepfun-ai/step-3.7-flash | 阶跃星辰 | ❌ 超时（2分） |
+| Judge | openai/gpt-oss-120b | OpenAI | ✅ 正常评分 |
+| Synth | minimaxai/minimax-m2.7 | MiniMax | ✅ 综合报告完成 |
+
+**验证结果**：
+- **抗幻觉**：Panel A引用了不存在的"上交所2025科技白皮书"，Panel B引用已撤稿自媒体文章，Panel C正确引用证监会公告+Wind数据。Judge识别出A/B来源不可信，Synth仅采纳C的结论并标注A/B存在幻觉
+- **复杂任务**：Synth主动列出5项盲区（未获取实时数据/缺财报/缺外资数据等），而非强行补全
+- **降级容错**：stepfun超时后框架未崩溃，qwen+gemini的有效回答被正常综合，完整报告仍输出
+
+**与案例2对照**：案例2中2/3 Panel失效仍完成，本案例1/3 Panel超时仍完成——**降级容错被两次独立运行验证**
+</details>
+
 ### 3. 降低单点依赖——降级容错
 
 你的业务不绑死在任何一个模型上。某个模型挂了？Fusion 自动跳过它，用剩下的模型跑。某个厂商涨价？换个厂商的模型就行，框架不变。
@@ -347,6 +370,8 @@ Fusion 自动按域名路由到最佳抓取策略，失败时逐级降级：
 
 ## Docker
 
+> **注意**：Docker 部署方式尚未在真实环境中实测验证（Dockerfile 已提供，欢迎反馈）。如果你验证成功，欢迎提 Issue 或 PR 告知。
+
 ```bash
 # 构建
 docker build -t fusion .
@@ -436,7 +461,7 @@ fusion/
 | 对比项 | 单模型多次采样 | Fusion 多模型协作 |
 |--------|---------------|-------------------|
 | 幻觉检测 | 无法做到 | 交叉验证自动筛除 |
-| 复杂任务准确率 | 单模型容易翻车 | 多模型交叉验证更准（本地实测见案例） |
+| **复杂任务准确率** | 单模型容易翻车 | 多模型互补+诚实降级（本地实测见案例） |
 | 厂商依赖 | 绑死一个厂商 | 换厂商不影响框架 |
 | 降级容错 | 模型挂了直接废 | 自动跳过故障模型 |
 | API 成本 | 低 | 约单模型5倍（3 Panel + 1 Judge + 1 Synth） |
@@ -458,7 +483,7 @@ fusion/
 | Problem | How Fusion helps |
 |---------|-----------------|
 | **Hallucination** | Cross-validation across vendors catches fabricated answers |
-| **Complex tasks** | Cross-validation + honest degradation. Real test: 3 models independently agreed on same book list from 4 sources; when sources were insufficient (3/4 blocked by anti-scraping), Fusion listed blind spots instead of fabricating |
+| **Complex tasks** | Cross-validation + honest degradation. Real tests: (1) 3 models independently agreed on same book list from 4 sources; (2) when sources were insufficient (3/4 blocked), Fusion listed blind spots instead of fabricating; (3) 5-vendor full-pipeline test with 1/3 Panel timeout — framework auto-degraded, complete report still produced |
 | **Vendor lock-in** | Swap models without changing your framework; auto-degrades if one model fails |
 
 **Why different vendors?** Models from the same vendor share training data and biases. Cross-validation across vendors catches hallucinations that self-review can't.
