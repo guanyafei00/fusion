@@ -6,12 +6,7 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl ffmpeg && rm -rf /var/lib/apt/lists/*
 
-COPY pyproject.toml .
-RUN pip install --no-cache-dir .
-
-# Optional: playwright + chromium for JS-rendered pages
-# RUN pip install playwright && playwright install chromium
-
 COPY . .
+RUN pip install --no-cache-dir .
 
 ENTRYPOINT ["fusion"]

@@ -1,7 +1,7 @@
 [project]
 name = "fusion"
 version = "1.0.0"
-description = "Multi-model consensus pipeline: Panel→Judge→Synth, anti-hallucination architecture"
+description = "Multi-Model Collaboration Framework: Panel→Judge→Synth, anti-hallucination architecture"
 readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "MIT"}
