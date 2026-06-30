@@ -2,6 +2,7 @@
 import click
 from .config import Config
 from .pipeline import run
+from . import __version__
 
 
 @click.command()
@@ -16,8 +17,10 @@ from .pipeline import run
 @click.option("--api-key", default=None, envvar="FUSION_LLM_API_KEY",
               help="LLM API key (or set FUSION_LLM_API_KEY)")
 @click.option("--verbose", "-v", is_flag=True, help="Print intermediate steps")
+@click.option("--no-probe", is_flag=True, help="Skip model quality probe, use config models as-is")
+@click.version_option(version=__version__, prog_name="fusion")
 def main(query, url, stability, panel_models, judge_model, synth_model,
-         preset, api_key, verbose):
+         preset, api_key, verbose, no_probe):
     """Fusion: Multi-model consensus pipeline.
 
     QUERY is the question to answer.
@@ -52,7 +55,9 @@ def main(query, url, stability, panel_models, judge_model, synth_model,
         click.echo(f"🔄 Stability: {stability}")
         click.echo("---")
 
-    result = run(query, urls=urls, cfg=cfg, stability=stability)
+    # --no-probe explicitly disables; otherwise use config default
+    result = run(query, urls=urls, cfg=cfg, stability=stability,
+                 auto_probe=False if no_probe else None)
     click.echo(result)
 
 

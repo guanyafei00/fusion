@@ -35,7 +35,7 @@ def chat(cfg: Config, model: str, messages: list[dict], temperature: float = 0.3
 def chat_json(cfg: Config, model: str, messages: list[dict],
               temperature: float = 0.0, max_tokens: int = 2048,
               retries: int = 1) -> dict:
-    """Chat completion that expects JSON response. Retries once on parse failure."""
+    """Chat completion that expects JSON response. Retries on parse failure."""
     payload = {
         "model": model,
         "messages": messages,
@@ -44,19 +44,32 @@ def chat_json(cfg: Config, model: str, messages: list[dict],
         "response_format": {"type": "json_object"},
     }
     for attempt in range(retries + 1):
-        resp = httpx.post(
-            f"{cfg.llm_base_url}/chat/completions",
-            headers=_headers(cfg),
-            json=payload,
-            timeout=cfg.llm_timeout,
-        )
-        resp.raise_for_status()
-        content = resp.json()["choices"][0]["message"]["content"]
         try:
+            resp = httpx.post(
+                f"{cfg.llm_base_url}/chat/completions",
+                headers=_headers(cfg),
+                json=payload,
+                timeout=cfg.llm_timeout,
+            )
+            resp.raise_for_status()
+            content = resp.json()["choices"][0]["message"].get("content")
+            if not content:
+                # Model returned empty content (e.g. proxy doesn't support response_format)
+                # Fallback: retry without response_format
+                if attempt < retries:
+                    payload.pop("response_format", None)
+                    continue
+                return {"error": "empty_content", "raw": None}
             return json.loads(content)
-        except json.JSONDecodeError:
-            if attempt == retries:
-                return {"error": "non_json_response", "raw": content[:500]}
+        except (json.JSONDecodeError, TypeError) as e:
+            if attempt < retries:
+                payload.pop("response_format", None)
+                continue
+            return {"error": "non_json_response", "raw": str(content)[:500] if content else None}
+        except Exception as e:
+            if attempt < retries:
+                continue
+            return {"error": "api_error", "raw": str(e)[:500]}
     return {"error": "no_response"}
 
 

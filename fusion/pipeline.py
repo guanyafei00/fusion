@@ -5,6 +5,7 @@ from .config import Config
 from .security import RateLimiter
 from .llm import chat, chat_json
 from .fetchers import fetch_url, fetch_urls
+from .probe import auto_select
 
 
 # --- Step 1: Search & Fetch ---
@@ -58,7 +59,8 @@ def step_panel(query: str, sources: dict[str, str], cfg: Config) -> dict[str, st
 
         for model, fut in futures.items():
             try:
-                results[model] = fut.result()
+                result = fut.result()
+                results[model] = result if result else "[模型返回空内容]"
             except Exception as e:
                 results[model] = f"[ERROR] {e}"
 
@@ -82,7 +84,18 @@ def step_judge(query: str, panel_answers: dict[str, str], cfg: Config) -> dict:
     ]
     limiter = RateLimiter(cfg.rpm_limit)
     limiter.wait()
-    return chat_json(cfg, cfg.judge_model, messages, temperature=0.0, retries=1)
+    result = chat_json(cfg, cfg.judge_model, messages, temperature=0.0, retries=1)
+    # Graceful fallback if judge fails
+    if isinstance(result, dict) and "error" in result:
+        # Build a simple equal-score judge result so pipeline can continue
+        fallback_scores = {m: 5 for m in panel_answers}
+        return {
+            "scores": fallback_scores,
+            "best": list(panel_answers.keys())[0] if panel_answers else "",
+            "fact_conflicts": [],
+            "recommendation": f"Judge failed ({result.get('error','unknown')}), using equal scores as fallback.",
+        }
+    return result
 
 
 # --- Step 4: Synth (synthesize final answer) ---
@@ -91,7 +104,7 @@ def step_synth(query: str, sources: dict[str, str],
                panel_answers: dict[str, str], judge: dict, cfg: Config) -> str:
     """Step 4: Synthesize final answer using judge's evaluation."""
     answers_summary = "\n\n".join(
-        f"### {model}:\n{answer[:1000]}" for model, answer in panel_answers.items()
+        f"### {model}:\n{(answer or '[空]')[:1000]}" for model, answer in panel_answers.items()
     )
     judge_text = json.dumps(judge, ensure_ascii=False, indent=2)
     source_text = "\n".join(
@@ -117,20 +130,49 @@ def step_synth(query: str, sources: dict[str, str],
 # --- Full pipeline ---
 
 def run(query: str, urls: list[str] | None = None, cfg: Config | None = None,
-        stability: int = 1) -> str:
-    """Run full Fusion pipeline: Fetch→Panel→Judge→Synth.
+        stability: int = 1, auto_probe: bool | None = None) -> str:
+    """Run full Fusion pipeline: Probe→Fetch→Panel→Judge→Synth.
 
     Args:
         query: The question to answer.
         urls: Optional list of URLs to fetch as source material.
         cfg: Configuration (loaded from env vars if not provided).
         stability: Number of rounds for stability test (1 = single run).
+        auto_probe: If True, auto-detect model quality before running.
+                    If None, uses cfg.auto_probe (default: True).
 
     Returns:
         Final synthesized answer string.
     """
     if cfg is None:
         cfg = Config()
+
+    # Step 0: Auto-probe model quality (runs once per invocation)
+    should_probe = auto_probe if auto_probe is not None else cfg.auto_probe
+    if should_probe:
+        print("\n🔍 Step 0: 模型质量检测...")
+        selection = auto_select(
+            cfg.llm_base_url, cfg.llm_api_key,
+            panel_size=cfg.probe_panel_size,
+        )
+        print(selection.get("probe_report", ""))
+        
+        # Override config with probed models
+        config_modified = False
+        if selection["panel_models"] != cfg.panel_models:
+            print(f"  📋 Panel: {cfg.panel_models} → {selection['panel_models']}")
+            cfg.panel_models = selection["panel_models"]
+            config_modified = True
+        if selection["judge_model"] != cfg.judge_model:
+            print(f"  ⚖️  Judge: {cfg.judge_model} → {selection['judge_model']}")
+            cfg.judge_model = selection["judge_model"]
+            config_modified = True
+        if selection["synth_model"] != cfg.synth_model:
+            print(f"  🔮 Synth: {cfg.synth_model} → {selection['synth_model']}")
+            cfg.synth_model = selection["synth_model"]
+            config_modified = True
+        if not config_modified:
+            print("  ✅ 当前配置已是最优，无需调整")
 
     results = []
     for round_num in range(stability):

@@ -53,6 +53,12 @@ class Config:
     # --- Auth (optional, for self-hosted) ---
     auth_token: str = field(default_factory=lambda: _env_opt("FUSION_AUTH_TOKEN", ""))
 
+    # --- Auto-probe (model quality detection) ---
+    auto_probe: bool = field(default_factory=lambda: _env_opt(
+        "FUSION_AUTO_PROBE", "true").lower() in ("true", "1", "yes"))
+    probe_panel_size: int = field(default_factory=lambda: int(_env_opt(
+        "FUSION_PROBE_PANEL_SIZE", "3")))
+
     # --- API provider presets (convenience) ---
     @classmethod
     def openrouter(cls, api_key: str, **overrides):
